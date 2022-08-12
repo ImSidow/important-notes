@@ -1,0 +1,63 @@
+import { PrismaService } from 'src/prisma/prisma.service';
+import {
+    registerDecorator,
+    ValidationOptions,
+    ValidatorConstraint,
+    ValidatorConstraintInterface,
+    ValidationArguments,
+} from 'class-validator';
+import { Injectable } from '@nestjs/common';
+
+@ValidatorConstraint({ name: 'Unique', async: true })
+@Injectable()
+export class UniqueConstraint implements ValidatorConstraintInterface {
+    constructor(private readonly prisma: PrismaService) {}
+
+    async validate(value: any, args: ValidationArguments): Promise<boolean> {
+        // const [model, property = 'id', exceptField = null] = args.constraints;
+        const [model, property = 'id'] = args.constraints;
+
+        if (!value || !model) return false;
+
+        const record = await this.prisma[model].findUnique({
+            where: {
+                [property]: value,
+            },
+        });
+
+        if (record === null) return true;
+
+        return false;
+
+        // if (!exceptField) return false;
+
+        // const exceptFieldValue = (args.object as any)[exceptField];
+        // if (!exceptFieldValue) return false;
+
+        // return record[exceptField] === exceptFieldValue;
+    }
+
+    defaultMessage(args: ValidationArguments) {
+        const [, , message] = args.constraints;
+        return message ?? `the ${args.property} has already been taken`;
+    }
+}
+
+// export function Unique(model: string, uniqueField: string, exceptField: string = null, validationOptions?: ValidationOptions) {
+export function Unique(
+    model: string,
+    uniqueField: string,
+    message: string = null,
+    validationOptions?: ValidationOptions
+) {
+    return function (object: any, propertyName: string) {
+        registerDecorator({
+            target: object.constructor,
+            propertyName: propertyName,
+            options: validationOptions,
+            // constraints: [model, uniqueField, exceptField],
+            constraints: [model, uniqueField, message],
+            validator: UniqueConstraint,
+        });
+    };
+}

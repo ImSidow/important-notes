@@ -1,0 +1,13 @@
+import { Module } from '@nestjs/common';
+import { PrismaModule } from './prisma/prisma.module';
+import { PrismaService } from './prisma/prisma.service';
+import { BooksModule } from './books/books.module';
+import UserModule from './users/users.module';
+import { UniqueConstraint } from './validators/unique';
+
+@Module({
+    imports: [UserModule, PrismaModule, BooksModule],
+    controllers: [],
+    providers: [PrismaService, UniqueConstraint],
+})
+export class AppModule {}
